@@ -23,6 +23,10 @@ class Elements(Enum):
 
     quote_class_name = 'quote' # class
 
+    #####################################################
+
+    next_page_btn = "//a[text()='Next ']" # xpath
+
 
 def load_page(url):
     driver.get(url)
@@ -49,9 +53,11 @@ def scrape_quotes():
     quotes = []
     authors = []
     tags = []
-    iterator = 1
+    iterator = 0
     keep_scraping = True
+    is_next_page = ""
 
+    is_next_page = driver.find_element(By.XPATH, Elements.next_page_btn.value)
     while keep_scraping:
         quote_elements = driver.find_elements(By.CLASS_NAME, Elements.quote_class_name.value)
         print(len(quote_elements))
@@ -60,9 +66,23 @@ def scrape_quotes():
             authors.append(quote.find_element(By.CLASS_NAME, 'author').text)
             tags.append([tag.text for tag in quote.find_elements(By.CLASS_NAME, 'tag')])
             iterator += 1
-            if iterator>=10:
-                keep_scraping = False # break main loop
+            tmp=len(quote_elements)
+            if iterator >= len(quote_elements):
+                # keep_scraping = False # break main loop
+                iterator = 0
                 break # break for loop
+
+        try:
+            is_next_page = driver.find_element(By.XPATH, Elements.next_page_btn.value)
+        except:
+            is_next_page = ""
+            keep_scraping = False  # break main loop
+
+        if is_next_page != "":
+            is_next_page.click()
+        else:
+            continue
+
 
     return quotes, authors, tags
 
@@ -72,7 +92,7 @@ def save2txt(data):
     authors = data[1]
     tags = data[2]
 
-    with open("scraped_quotes.txt", "w") as file:
+    with open("scraped_quotes.txt", "w", encoding="utf-8") as file:
         for i in range(len(quotes)):
             file.write(f'{quotes[i]}\n')
             file.write(f'{authors[i]}\n')
